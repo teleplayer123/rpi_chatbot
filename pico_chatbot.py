@@ -178,7 +178,7 @@ def chat_loop():
             time.sleep(5) # Show AI response for a moment
 
             # Speak the text using Piper
-            piper_cmd = f"echo '{ai_response}' | {PIPER_CLI} --model {PIPER_MODEL} --output_raw | aplay -r 22050 -f S16_LE -t raw"
+            piper_cmd = f"echo '{ai_response}' | {PIPER_CLI} --model {PIPER_MODEL} --config {PIPER_CONFIG} --output_raw | aplay -r 22050 -f S16_LE -t raw"
             subprocess.Popen(piper_cmd, shell=True)
             
             time.sleep(1) # Debounce
