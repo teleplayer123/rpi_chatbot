@@ -175,7 +175,8 @@ def chat_loop():
             
             # DISPLAY & SPEAK (Piper)
             update_screen(board, f"AI: {ai_response}")
-            
+            time.sleep(5) # Show AI response for a moment
+
             # Speak the text using Piper
             piper_cmd = f"echo '{ai_response}' | {PIPER_CLI} --model {PIPER_MODEL} --output_raw | aplay -r 22050 -f S16_LE -t raw"
             subprocess.Popen(piper_cmd, shell=True)
