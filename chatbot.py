@@ -2,14 +2,11 @@ import os
 import time
 import subprocess
 import sys
+import signal
 import threading
 import RPi.GPIO as GPIO
 from PIL import Image, ImageDraw, ImageFont
-
-sys.path.append(os.path.abspath("/home/pi/Whisplay/Driver"))
 from WhisPlay import WhisPlayBoard
-board = WhisPlayBoard()
-board.set_backlight(50)
 
 WHISPER_CLI = "whisper-cli"
 PICOLM_CLI = "picolm"
@@ -23,6 +20,9 @@ PIPER_MODEL = os.path.join(os.getcwd(), "piper", "model.onnx")
 RECORD_FILE = os.path.join(os.getcwd(), "in.wav")
 MAX_RECORD_SEC = 60
 
+BOARD = WhisPlayBoard()
+BOARD.set_backlight(60)
+
 # --- State Machine ---
 class State:
     IDLE = 0
@@ -34,7 +34,7 @@ def get_card_index():
     result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
     return result.stdout.strip()
 
-# --- LCD Screen Generation (Taken from Whisplay Demo) ---
+# --- LCD Screen Generation ---
 def make_text_image(text, sub_text="", bg_color=(0, 0, 0), text_color=(255, 255, 255),
                     width=240, height=280):
     """Generate RGB565 pixel data with text (for LCD display)"""
@@ -114,12 +114,10 @@ def load_image_rgb565(filepath, screen_width=240, screen_height=280):
     except Exception:
         return None
 
-# --- Hardware Control (from Whisplay demo) ---
+# --- Hardware Control ---
 class RecordPlayHandler:
-    def __init__(self, card_index=None):
-        self.board = WhisPlayBoard()
-        self.board.set_backlight(60)
-
+    def __init__(self, board, card_index=None):
+        self.board = board
         self.card_index = card_index or self._find_wm8960_card()
         self._record_proc = None
         self._play_proc = None
@@ -388,20 +386,6 @@ class RecordPlayHandler:
 
     # ==================== Run ====================
     def run(self):
-        print("=" * 50)
-        print(" Whisplay Recording & Playback Demo")
-        print("=" * 50)
-        print(f" Sound card: card {self.card_index}")
-        print(f" Record file: {RECORD_FILE}")
-        print(f" Max recording: {MAX_RECORD_SEC}s")
-        print("")
-        print(" Controls:")
-        print("   Hold button → Start recording (red blink)")
-        print("   Release     → Stop recording → Auto-play (green)")
-        print("   Press while → Stop playback")
-        print("   Ctrl+C     → Exit")
-        print("=" * 50)
-
         # Show idle screen + blue breathing LED
         self._show_screen(self._screen_idle)
         self._start_led_breath(0, 0, 255)
@@ -435,7 +419,7 @@ def chat_loop():
     
     while True:
         if GPIO.input(BUTTON_PIN) == GPIO.LOW:
-            update_screen("Listening...", color=(255, 0, 0))
+            update_screen("Listening...", color="blue")
             
             # RECORD
             subprocess.run(["arecord", "-D", "hw:0,0", "-d", "5", "-f", "S16_LE", "-r", "16000", RECORD_FILE])
@@ -449,7 +433,7 @@ def chat_loop():
             ai_response = subprocess.check_output(" ".join([PICOLM_CLI, "-m", PICOLM_MODEL, "-p", f"User: {user_text}\nAssistant:"]), text=True)
             
             # DISPLAY & SPEAK (Piper)
-            update_screen(f"AI: {ai_response}", color=(0, 255, 0))
+            update_screen(f"AI: {ai_response}", color=)
             
             # Speak the text using Piper
             piper_cmd = f"echo '{ai_response}' | {PIPER_CLI} --model {PIPER_MODEL} --output_raw | aplay -r 22050 -f S16_LE -t raw"
