@@ -162,6 +162,7 @@ def chat_loop():
             
             # TRANSCRIBE (Whisper.cpp)
             update_screen(board, "Thinking...")
+            time.sleep(1) # Small delay to ensure file is ready
             user_text = subprocess.check_output(" ".join([WHISPER_CLI, "-m", WHISPER_MODEL, "-nt", "-f", RECORD_FILE]), text=True)
             
             # GENERATE (PicoLM)
