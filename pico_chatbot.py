@@ -151,11 +151,11 @@ def chat_loop():
     board.set_backlight(60)
     curr_state = State.IDLE
 
-    update_screen(board, "Ready!\nHold button to talk.")
+    update_screen(board, "Press button to talk.")
     while True:
         if board.button_pressed():
             curr_state = State.BUSY
-            update_screen(board, "Listening for 5 seconds...", color="blue")
+            update_screen(board, "Listening...", color="blue")
             
             # RECORD
             start_recording(board)
