@@ -162,7 +162,7 @@ def chat_loop():
             
             # TRANSCRIBE (Whisper.cpp)
             update_screen(board, "Thinking...")
-            user_text = subprocess.check_output(" ".join([WHISPER_CLI, "-m", WHISPER_MODEL, "-nt", "-f", "in.wav"]), text=True)
+            user_text = subprocess.check_output(" ".join([WHISPER_CLI, "-m", WHISPER_MODEL, "-nt", "-f", RECORD_FILE]), text=True)
             
             # GENERATE (PicoLM)
             # We run this and capture output to display it
