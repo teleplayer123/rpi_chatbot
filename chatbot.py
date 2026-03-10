@@ -115,7 +115,7 @@ def load_image_rgb565(filepath, screen_width=240, screen_height=280):
         return None
 
 # --- Hardware Control ---
-class RecordPlayHandler:
+class DisplayAudioHandler:
     def __init__(self, board, card_index=None):
         self.board = board
         self.card_index = card_index or self._find_wm8960_card()
