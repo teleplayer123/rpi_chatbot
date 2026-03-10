@@ -18,7 +18,7 @@ PIPER_CONFIG = os.path.join(os.getcwd(), "piper", "config.json")
 PIPER_MODEL = os.path.join(os.getcwd(), "piper", "model.onnx")
 
 RECORD_FILE = os.path.join(os.getcwd(), "in.wav")
-MAX_RECORD_SEC = 60
+MAX_RECORD_SEC = 15
 
 # --- State Machine ---
 class State:
@@ -120,20 +120,30 @@ def update_screen(board, text, sub_text="", color="cyan"):
     else:
         text_color = (0, 255, 255)
     w, h = board.LCD_WIDTH, board.LCD_HEIGHT
+    # generate pixel data from text
     pixel_data = make_text_image(text, sub_text, text_color=text_color, width=w, height=h)
-    return pixel_data
+    try:
+        # show on screen
+        board.draw_image(0, 0, w, h, pixel_data)
+    except Exception as e:
+        print(f"Error updating screen: {e}")
 
-def start_recording():
+def start_recording(board):
     hw_device = f"hw:{get_card_index()},0"
+
     # Use 48000Hz — RK3566 I2S PLL can generate clean 12.288MHz MCLK for 48000Hz
     # 44100Hz requires 11.2896MHz, RK3566 PLL cannot divide precisely, causing clock jitter and distortion
     record_proc = subprocess.Popen(
         ['arecord', '-D', hw_device, '-f', 'S16_LE', '-r', '48000',
             '-c', '2', '-t', 'wav', '-d', str(MAX_RECORD_SEC), RECORD_FILE],
         stdout=subprocess.PIPE, stderr=subprocess.PIPE
-    )
-    record_proc.wait()
-    record_proc = None
+)
+    record_proc.wait(timeout=MAX_RECORD_SEC + 5)  # Wait for recording to finish with some buffer
+
+    # Check if recording file was generated
+    if not os.path.exists(RECORD_FILE) or os.path.getsize(RECORD_FILE) < 100:
+        print("⚠️  Recording file is empty or not generated")
+        update_screen(board, "Error: Recording was not saved.")
 
 # --- Main Logic ---
 def chat_loop():
@@ -145,10 +155,10 @@ def chat_loop():
     while True:
         if board.button_pressed():
             curr_state = State.BUSY
-            update_screen(board, "Listening...", color="blue")
+            update_screen(board, "Listening for 15 seconds...", color="blue")
             
             # RECORD
-            subprocess.run(["arecord", "-D", "hw:0,0", "-d", str(MAX_RECORD_SEC), "-f", "S16_LE", "-r", "48000", "-c", "2", "-t", "wav", RECORD_FILE])
+            start_recording(board)
             
             # TRANSCRIBE (Whisper.cpp)
             update_screen(board, "Thinking...")
