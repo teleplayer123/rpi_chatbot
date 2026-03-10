@@ -18,7 +18,7 @@ PIPER_CONFIG = os.path.join(os.getcwd(), "piper", "config.json")
 PIPER_MODEL = os.path.join(os.getcwd(), "piper", "model.onnx")
 
 RECORD_FILE = os.path.join(os.getcwd(), "in.wav")
-MAX_RECORD_SEC = 15
+MAX_RECORD_SEC = 5
 
 # --- State Machine ---
 class State:
@@ -155,7 +155,7 @@ def chat_loop():
     while True:
         if board.button_pressed():
             curr_state = State.BUSY
-            update_screen(board, "Listening for 15 seconds...", color="blue")
+            update_screen(board, "Listening for 5 seconds...", color="blue")
             
             # RECORD
             start_recording(board)
@@ -163,11 +163,11 @@ def chat_loop():
             # TRANSCRIBE (Whisper.cpp)
             update_screen(board, "Thinking...")
             time.sleep(1) # Small delay to ensure file is ready
-            user_text = subprocess.check_output(" ".join([WHISPER_CLI, "-m", WHISPER_MODEL, "-nt", "-f", RECORD_FILE]), text=True)
+            user_text = subprocess.check_output(" ".join([WHISPER_CLI, "-m", WHISPER_MODEL, "-nt", "-f", RECORD_FILE]), text=True, shell=True)
             
             # GENERATE (PicoLM)
             # We run this and capture output to display it
-            ai_response = subprocess.check_output(" ".join([PICOLM_CLI, "-m", PICOLM_MODEL, "-p", f"User: {user_text}\nAssistant:"]), text=True)
+            ai_response = subprocess.check_output(" ".join([PICOLM_CLI, "-m", PICOLM_MODEL, "-p", f"User: {user_text}\nAssistant:"]), text=True, shell=True)
             
             # DISPLAY & SPEAK (Piper)
             update_screen(board, f"AI: {ai_response}")
