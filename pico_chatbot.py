@@ -164,7 +164,11 @@ def chat_loop():
             update_screen(board, "Thinking...")
             time.sleep(1) # Small delay to ensure file is ready
             user_text = subprocess.check_output(" ".join([WHISPER_CLI, "-m", WHISPER_MODEL, "-nt", "-f", RECORD_FILE]), text=True, shell=True)
-            
+
+            # Display user prompt
+            update_screen(board, f"{user_text}", color="yellow")
+            time.sleep(3) # Show user input for a moment
+
             # GENERATE (PicoLM)
             # We run this and capture output to display it
             ai_response = subprocess.check_output(" ".join([PICOLM_CLI, "-m", PICOLM_MODEL, "-p", f"User: {user_text}\nAssistant:"]), text=True, shell=True)
