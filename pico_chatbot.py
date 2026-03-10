@@ -151,7 +151,7 @@ def chat_loop():
     board.set_backlight(60)
     curr_state = State.IDLE
 
-    update_screen(board, "Press button to talk.")
+    update_screen(board, "READY", sub_text="Press button to talk.")
     while True:
         if board.button_pressed():
             curr_state = State.BUSY
@@ -161,12 +161,12 @@ def chat_loop():
             start_recording(board)
             
             # TRANSCRIBE (Whisper.cpp)
-            update_screen(board, "Thinking...")
+            update_screen(board, "Thinking...", color="blue")
             time.sleep(1) # Small delay to ensure file is ready
             user_text = subprocess.check_output(" ".join([WHISPER_CLI, "-m", WHISPER_MODEL, "-nt", "-f", RECORD_FILE]), text=True, shell=True)
 
             # Display user prompt
-            update_screen(board, f"User: {user_text}", color="yellow")
+            update_screen(board, "User: ", sub_text=user_text, color="yellow")
             time.sleep(3) # Show user input for a moment
 
             # GENERATE (PicoLM)
@@ -174,7 +174,7 @@ def chat_loop():
             ai_response = subprocess.check_output(" ".join([PICOLM_CLI, "-m", PICOLM_MODEL, "-p", f"{user_text}"]), text=True, shell=True)
             
             # DISPLAY & SPEAK (Piper)
-            update_screen(board, f"AI: {ai_response}")
+            update_screen(board, "AI: ", sub_text=ai_response)
             time.sleep(5) # Show AI response for a moment
 
             # Speak the text using Piper
@@ -184,7 +184,7 @@ def chat_loop():
             time.sleep(1) # Debounce
         else:
             if curr_state == State.BUSY:
-                update_screen(board, "Press button to talk.")
+                update_screen(board, "READY", sub_text="Press button to talk.")
                 curr_state = State.IDLE
 
 try:
