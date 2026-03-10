@@ -166,7 +166,7 @@ def chat_loop():
             user_text = subprocess.check_output(" ".join([WHISPER_CLI, "-m", WHISPER_MODEL, "-nt", "-f", RECORD_FILE]), text=True, shell=True)
 
             # Display user prompt
-            update_screen(board, f"{user_text}", color="yellow")
+            update_screen(board, f"User: {user_text}", color="yellow")
             time.sleep(3) # Show user input for a moment
 
             # GENERATE (PicoLM)
@@ -183,7 +183,7 @@ def chat_loop():
             time.sleep(1) # Debounce
         else:
             if curr_state == State.BUSY:
-                update_screen(board, "Ready!\nHold button to talk.")
+                update_screen(board, "Press button to talk.")
                 curr_state = State.IDLE
 
 try:
