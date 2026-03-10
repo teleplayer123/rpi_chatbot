@@ -171,7 +171,7 @@ def chat_loop():
 
             # GENERATE (PicoLM)
             # We run this and capture output to display it
-            ai_response = subprocess.check_output(" ".join([PICOLM_CLI, "-m", PICOLM_MODEL, "-p", f"\'{user_text.strip()}\'"]), text=True, shell=True)
+            ai_response = subprocess.check_output(" ".join([PICOLM_CLI, "-m", PICOLM_MODEL, "-p", f"\"{user_text.strip()}\""]), text=True, shell=True)
             
             # DISPLAY & SPEAK (Piper)
             update_screen(board, "AI: ", sub_text=ai_response)
