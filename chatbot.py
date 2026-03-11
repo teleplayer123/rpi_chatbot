@@ -112,7 +112,7 @@ def load_image_rgb565(filepath, screen_width=240, screen_height=280):
         return None
 
 # --- Hardware Control ---
-class DisplayAudioHandler:
+class ChatBot:
     def __init__(self, card_index=None):
         self.board = WhisPlayBoard()
         self.board.set_backlight(60)
@@ -444,4 +444,5 @@ class DisplayAudioHandler:
         self._record_proc = None
 
 
-
+bot = ChatBot()
+bot.run()
