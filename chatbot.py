@@ -20,9 +20,6 @@ PIPER_MODEL = os.path.join(os.getcwd(), "piper", "model.onnx")
 RECORD_FILE = os.path.join(os.getcwd(), "in.wav")
 MAX_RECORD_SEC = 60
 
-BOARD = WhisPlayBoard()
-BOARD.set_backlight(60)
-
 # --- State Machine ---
 class State:
     IDLE = 0
@@ -116,8 +113,9 @@ def load_image_rgb565(filepath, screen_width=240, screen_height=280):
 
 # --- Hardware Control ---
 class DisplayAudioHandler:
-    def __init__(self, board, card_index=None):
-        self.board = board
+    def __init__(self, card_index=None):
+        self.board = WhisPlayBoard()
+        self.board.set_backlight(60)
         self.card_index = card_index or self._find_wm8960_card()
         self._record_proc = None
         self._play_proc = None
@@ -128,6 +126,7 @@ class DisplayAudioHandler:
         self._play_thread = None
         self._led_thread = None
         self._led_running = False
+        self._recording_ready = threading.Event() # To signal when recording file is ready for transcription
 
         # Pre-generate LCD screens (using actual LCD dimensions 240x280)
         w, h = self.board.LCD_WIDTH, self.board.LCD_HEIGHT
@@ -258,14 +257,8 @@ class DisplayAudioHandler:
             self._show_screen(self._screen_idle)
             self._start_led_breath(0, 0, 255)
             return
-
-        file_size = os.path.getsize(RECORD_FILE)
-        # 48000Hz * 2ch * 2bytes = 192000 bytes/sec
-        duration = max(0, (file_size - 44)) / 192000  # Subtract WAV header
-        print(f"✅  Recording complete, duration: {duration:.1f}s, file: {RECORD_FILE}")
-
-        # Auto-start playback
-        self._start_playback()
+        
+        self._recording_ready.set()  # Signal that recording is ready for transcription
 
     def _stop_recording(self):
         """Stop recording (triggered by button callback)"""
@@ -384,6 +377,24 @@ class DisplayAudioHandler:
         except Exception as e:
             print(f"LCD display error: {e}")
 
+    def update_screen(self, text, sub_text="", color="cyan"):
+        if color.lower() == "blue":
+            text_color = (100, 180, 255)
+        elif color.lower() == "red":
+            text_color = (255, 49, 49)
+        elif color.lower() == "yellow":
+            text_color = (253, 218, 13)
+        else:
+            text_color = (0, 255, 255)
+        w, h = self.board.LCD_WIDTH, self.board.LCD_HEIGHT
+        # generate pixel data from text
+        pixel_data = make_text_image(text, sub_text, text_color=text_color, width=w, height=h)
+        try:
+            # show on screen
+            self.board.draw_image(0, 0, w, h, pixel_data)
+        except Exception as e:
+            print(f"Error updating screen: {e}")
+
     # ==================== Run ====================
     def run(self):
         # Show idle screen + blue breathing LED
@@ -392,7 +403,26 @@ class DisplayAudioHandler:
 
         try:
             while True:
-                time.sleep(0.1)
+                time.sleep(0.5) # Debounce
+                if self._recording_ready.is_set():
+                    # TRANSCRIBE (Whisper.cpp)
+                    self.update_screen("Thinking...", color="blue")
+                    user_text = subprocess.check_output(" ".join([WHISPER_CLI, "-m", WHISPER_MODEL, "-nt", "-f", RECORD_FILE]), text=True, shell=True)
+                    
+                    # Display user prompt
+                    self.update_screen("User: ", sub_text=user_text, color="yellow")
+                    time.sleep(2) # Show trascribed text for a moment
+
+                    # GENERATE (PicoLM)
+                    # We run this and capture output to display it
+                    ai_response = subprocess.check_output(" ".join([PICOLM_CLI, PICOLM_MODEL, "-p", f"\"{user_text.strip()}\""]), text=True, shell=True)
+                    self.update_screen("AI: ", sub_text=ai_response, color="cyan")
+                    time.sleep(5) # Show AI response
+                    
+                    # Speak the text using Piper
+                    piper_cmd = f"echo '{ai_response}' | {PIPER_CLI} --model {PIPER_MODEL} --config {PIPER_CONFIG} --output_raw | aplay -r 22050 -f S16_LE -t raw"
+                    subprocess.Popen(piper_cmd, shell=True)
+                    self._recording_ready.clear() # Reset for next recording
         except KeyboardInterrupt:
             print("\nExiting...")
         finally:
@@ -413,35 +443,5 @@ class DisplayAudioHandler:
             pass
         self._record_proc = None
 
-# --- Main Logic ---
-def chat_loop():
-    update_screen("Ready!\nHold button to talk.")
-    
-    while True:
-        if GPIO.input(BUTTON_PIN) == GPIO.LOW:
-            update_screen("Listening...", color="blue")
-            
-            # RECORD
-            subprocess.run(["arecord", "-D", "hw:0,0", "-d", "5", "-f", "S16_LE", "-r", "16000", RECORD_FILE])
 
-            # TRANSCRIBE (Whisper.cpp)
-            update_screen("Thinking...")
-            user_text = subprocess.check_output(" ".join([WHISPER_CLI, "-m", WHISPER_MODEL, "-nt", "-f", "in.wav"]), text=True)
-            
-            # GENERATE (PicoLM)
-            # We run this and capture output to display it
-            ai_response = subprocess.check_output(" ".join([PICOLM_CLI, "-m", PICOLM_MODEL, "-p", f"User: {user_text}\nAssistant:"]), text=True)
-            
-            # DISPLAY & SPEAK (Piper)
-            update_screen(f"AI: {ai_response}", color=)
-            
-            # Speak the text using Piper
-            piper_cmd = f"echo '{ai_response}' | {PIPER_CLI} --model {PIPER_MODEL} --output_raw | aplay -r 22050 -f S16_LE -t raw"
-            subprocess.Popen(piper_cmd, shell=True)
-            
-            time.sleep(1) # Debounce
 
-try:
-    chat_loop()
-except KeyboardInterrupt:
-    GPIO.cleanup()
