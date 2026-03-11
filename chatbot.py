@@ -405,6 +405,8 @@ class ChatBot:
             while True:
                 time.sleep(0.5) # Debounce
                 if self._recording_ready.is_set():
+                    with self._lock:
+                        self.state = State.PLAYING
                     # TRANSCRIBE (Whisper.cpp)
                     self.update_screen("Thinking...", color="blue")
                     user_text = subprocess.check_output(" ".join([WHISPER_CLI, "-m", WHISPER_MODEL, "-nt", "-f", RECORD_FILE]), text=True, shell=True)
@@ -423,6 +425,8 @@ class ChatBot:
                     piper_cmd = f"echo '{ai_response}' | {PIPER_CLI} --model {PIPER_MODEL} --config {PIPER_CONFIG} --output_raw | aplay -r 22050 -f S16_LE -t raw"
                     subprocess.Popen(piper_cmd, shell=True)
                     self._recording_ready.clear() # Reset for next recording
+                    with self._lock:
+                        self.state = State.IDLE
         except KeyboardInterrupt:
             print("\nExiting...")
         finally:
