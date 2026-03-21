@@ -498,6 +498,7 @@ class WhisPlayBoard:
         try:
             self.spi.writebytes2(data)
         except AttributeError:
+            print("AttributeError: spi.writebytes2 not available")
             max_chunk = 4096
             for i in range(0, len(data), max_chunk):
                 self.spi.writebytes(data[i : i + max_chunk])
