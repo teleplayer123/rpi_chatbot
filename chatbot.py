@@ -420,13 +420,13 @@ class ChatBot:
                     print("Running picolm ...")
                     ai_response = subprocess.check_output(" ".join([PICOLM_CLI, PICOLM_MODEL, "-p", f"\"{user_text.strip()}\""]), text=True, shell=True)
                     self.update_screen("AI: ", sub_text=ai_response, color="cyan")
-                    time.sleep(5) # Show AI response
+                    time.sleep(8) # Show AI response
                     
                     # Speak the text using Piper
-                    print("Running piper...")
-                    piper_cmd = f"echo '{ai_response}' | {PIPER_CLI} --model {PIPER_MODEL} --config {PIPER_CONFIG} --output_raw | aplay -r 22050 -f S16_LE -t raw"
-                    subprocess.Popen(piper_cmd, shell=True)
-                    self._recording_ready.clear() # Reset for next recording
+                    # print("Running piper...")
+                    # piper_cmd = f"echo '{ai_response}' | {PIPER_CLI} --model {PIPER_MODEL} --config {PIPER_CONFIG} --output_raw | aplay -r 22050 -f S16_LE -t raw"
+                    # subprocess.Popen(piper_cmd, shell=True)
+                    # self._recording_ready.clear() # Reset for next recording
                     with self._lock:
                         self.state = State.IDLE
                     # Return to idle screen and blue breathing LED
