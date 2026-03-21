@@ -431,8 +431,8 @@ class ChatBot:
                     self._recording_ready.clear() # Reset for next recording
                     with self._lock:
                         self.state = State.IDLE
-                    # Return to idle screen and blue breathing LED
-                    self._show_screen(self._screen_idle)
+                    # Return to idle screen and blue breathing LED or commehnt out to keep last AI response on screen.
+                    #self._show_screen(self._screen_idle)
         except KeyboardInterrupt:
             print("\nExiting...")
         finally:
