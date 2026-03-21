@@ -55,6 +55,8 @@ def make_text_image(text, sub_text="", bg_color=(0, 0, 0), text_color=(255, 255,
         font_large = ImageFont.load_default()
         font_small = ImageFont.load_default()
 
+    # TODO: change funtionality to break up text into multiple lines to fit screen.
+
     # Center main text
     bbox = draw.textbbox((0, 0), text, font=font_large)
     tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
