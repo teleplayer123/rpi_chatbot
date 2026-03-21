@@ -426,7 +426,7 @@ class ChatBot:
                     # print("Running piper...")
                     # piper_cmd = f"echo '{ai_response}' | {PIPER_CLI} --model {PIPER_MODEL} --config {PIPER_CONFIG} --output_raw | aplay -r 22050 -f S16_LE -t raw"
                     # subprocess.Popen(piper_cmd, shell=True)
-                    # self._recording_ready.clear() # Reset for next recording
+                    self._recording_ready.clear() # Reset for next recording
                     with self._lock:
                         self.state = State.IDLE
                     # Return to idle screen and blue breathing LED
