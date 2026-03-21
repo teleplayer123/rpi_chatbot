@@ -420,7 +420,7 @@ class ChatBot:
                     print("Running picolm ...")
                     ai_response = subprocess.check_output(" ".join([PICOLM_CLI, PICOLM_MODEL, "-p", f"\"{user_text.strip()}\""]), text=True, shell=True)
                     self.update_screen("AI: ", sub_text=ai_response, color="cyan")
-                    time.sleep(8) # Show AI response
+                    time.sleep(5) # Show AI response
                     
                     # Speak the text using Piper
                     # print("Running piper...")
