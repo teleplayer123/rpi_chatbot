@@ -30,18 +30,47 @@ def get_card_index():
     result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
     return result.stdout.strip()
 
-# --- LCD Screen Generation (Taken from Whisplay Demo) ---
-def make_text_image(text, sub_text="", bg_color=(0, 0, 0), text_color=(255, 255, 255),
-                    width=240, height=280):
-    """Generate RGB565 pixel data with text (for LCD display)"""
-    img = Image.new('RGB', (width, height), bg_color)
+def wrap_text(draw, text, font, max_width):
+    """Split text into lines that fit within max_width."""
+    words = text.split()
+    lines = []
+    current = ""
+
+    for word in words:
+        test_line = f"{current} {word}".strip()
+        bbox = draw.textbbox((0, 0), test_line, font=font)
+        w = bbox[2] - bbox[0]
+
+        if w <= max_width:
+            current = test_line
+        else:
+            if current:
+                lines.append(current)
+            current = word
+
+    if current:
+        lines.append(current)
+
+    return lines
+
+def make_multiline_text_image(
+    text,
+    sub_text="",
+    bg_color=(0, 0, 0),
+    text_color=(255, 255, 255),
+    width=240,
+    height=280,
+):
+    img = Image.new("RGB", (width, height), bg_color)
     draw = ImageDraw.Draw(img)
 
-    # Try to load font, fall back to default
+    # Load fonts
     font_large = None
     font_small = None
-    for fpath in ["/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-                  "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf"]:
+    for fpath in [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf",
+    ]:
         if os.path.exists(fpath):
             try:
                 font_large = ImageFont.truetype(fpath, 28)
@@ -54,61 +83,58 @@ def make_text_image(text, sub_text="", bg_color=(0, 0, 0), text_color=(255, 255,
         font_large = ImageFont.load_default()
         font_small = ImageFont.load_default()
 
-    # Center main text
-    bbox = draw.textbbox((0, 0), text, font=font_large)
-    tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
-    x = (width - tw) // 2
-    y = (height - th) // 2 - 15
-    draw.text((x, y), text, fill=text_color, font=font_large)
+    padding = 10
+    max_text_width = width - padding * 2
 
-    # Sub text
+    # ---- Wrap main text ----
+    lines = wrap_text(draw, text, font_large, max_text_width)
+
+    # Measure total height
+    line_heights = []
+    for line in lines:
+        bbox = draw.textbbox((0, 0), line, font=font_large)
+        line_heights.append(bbox[3] - bbox[1])
+
+    line_spacing = 6
+    total_text_height = sum(line_heights) + line_spacing * (len(lines) - 1)
+
+    # Start Y (centered)
+    y = (height - total_text_height) // 2 - (10 if sub_text else 0)
+
+    # Draw each line centered
+    for i, line in enumerate(lines):
+        bbox = draw.textbbox((0, 0), line, font=font_large)
+        w = bbox[2] - bbox[0]
+
+        x = (width - w) // 2
+        draw.text((x, y), line, fill=text_color, font=font_large)
+
+        y += line_heights[i] + line_spacing
+
+    # ---- Subtext ----
     if sub_text:
-        bbox2 = draw.textbbox((0, 0), sub_text, font=font_small)
-        tw2 = bbox2[2] - bbox2[0]
-        x2 = (width - tw2) // 2
-        draw.text((x2, y + th + 15), sub_text, fill=text_color, font=font_small)
+        sub_lines = wrap_text(draw, sub_text, font_small, max_text_width)
 
-    # Convert to RGB565
+        y += 10  # gap
+
+        for line in sub_lines:
+            bbox = draw.textbbox((0, 0), line, font=font_small)
+            w = bbox[2] - bbox[0]
+            h = bbox[3] - bbox[1]
+
+            x = (width - w) // 2
+            draw.text((x, y), line, fill=text_color, font=font_small)
+            y += h + 4
+
+    # ---- Convert to RGB565 ----
     pixel_data = []
     for py in range(height):
         for px in range(width):
             r, g, b = img.getpixel((px, py))
             rgb565 = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3)
             pixel_data.extend([(rgb565 >> 8) & 0xFF, rgb565 & 0xFF])
+
     return pixel_data
-
-def load_image_rgb565(filepath, screen_width=240, screen_height=280):
-    """Load image file as RGB565 pixel data (scale maintaining aspect ratio + center crop)"""
-    try:
-        img = Image.open(filepath).convert('RGB')
-        original_width, original_height = img.size
-        aspect_ratio = original_width / original_height
-        screen_aspect_ratio = screen_width / screen_height
-
-        if aspect_ratio > screen_aspect_ratio:
-            new_height = screen_height
-            new_width = int(new_height * aspect_ratio)
-            resized_img = img.resize((new_width, new_height))
-            offset_x = (new_width - screen_width) // 2
-            cropped_img = resized_img.crop(
-                (offset_x, 0, offset_x + screen_width, screen_height))
-        else:
-            new_width = screen_width
-            new_height = int(new_width / aspect_ratio)
-            resized_img = img.resize((new_width, new_height))
-            offset_y = (new_height - screen_height) // 2
-            cropped_img = resized_img.crop(
-                (0, offset_y, screen_width, offset_y + screen_height))
-
-        pixel_data = []
-        for py in range(screen_height):
-            for px in range(screen_width):
-                r, g, b = cropped_img.getpixel((px, py))
-                rgb565 = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3)
-                pixel_data.extend([(rgb565 >> 8) & 0xFF, rgb565 & 0xFF])
-        return pixel_data
-    except Exception:
-        return None
     
 def update_screen(board, text, sub_text="", color="cyan"):
     if color.lower() == "blue":
@@ -121,7 +147,7 @@ def update_screen(board, text, sub_text="", color="cyan"):
         text_color = (0, 255, 255)
     w, h = board.LCD_WIDTH, board.LCD_HEIGHT
     # generate pixel data from text
-    pixel_data = make_text_image(text, sub_text, text_color=text_color, width=w, height=h)
+    pixel_data = make_multiline_text_image(text, sub_text, text_color=text_color, width=w, height=h)
     try:
         # show on screen
         board.draw_image(0, 0, w, h, pixel_data)
@@ -142,7 +168,7 @@ def start_recording(board):
 
     # Check if recording file was generated
     if not os.path.exists(RECORD_FILE) or os.path.getsize(RECORD_FILE) < 100:
-        print("⚠️  Recording file is empty or not generated")
+        print("Recording file is empty or not generated")
         update_screen(board, "Error: Recording was not saved.")
 
 # --- Main Logic ---
