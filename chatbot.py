@@ -80,6 +80,112 @@ def make_text_image(text, sub_text="", bg_color=(0, 0, 0), text_color=(255, 255,
             pixel_data.extend([(rgb565 >> 8) & 0xFF, rgb565 & 0xFF])
     return pixel_data
 
+def wrap_text(draw, text, font, max_width):
+    """Split text into lines that fit within max_width."""
+    words = text.split()
+    lines = []
+    current = ""
+
+    for word in words:
+        test_line = f"{current} {word}".strip()
+        bbox = draw.textbbox((0, 0), test_line, font=font)
+        w = bbox[2] - bbox[0]
+
+        if w <= max_width:
+            current = test_line
+        else:
+            if current:
+                lines.append(current)
+            current = word
+
+    if current:
+        lines.append(current)
+
+    return lines
+
+def make_multiline_text_image(
+    text,
+    sub_text="",
+    bg_color=(0, 0, 0),
+    text_color=(255, 255, 255),
+    width=240,
+    height=280,
+):
+    img = Image.new("RGB", (width, height), bg_color)
+    draw = ImageDraw.Draw(img)
+
+    # Load fonts
+    font_large = None
+    font_small = None
+    for fpath in [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf",
+    ]:
+        if os.path.exists(fpath):
+            try:
+                font_large = ImageFont.truetype(fpath, 28)
+                font_small = ImageFont.truetype(fpath, 18)
+            except Exception:
+                pass
+            break
+
+    if font_large is None:
+        font_large = ImageFont.load_default()
+        font_small = ImageFont.load_default()
+
+    padding = 10
+    max_text_width = width - padding * 2
+
+    # ---- Wrap main text ----
+    lines = wrap_text(draw, text, font_large, max_text_width)
+
+    # Measure total height
+    line_heights = []
+    for line in lines:
+        bbox = draw.textbbox((0, 0), line, font=font_large)
+        line_heights.append(bbox[3] - bbox[1])
+
+    line_spacing = 6
+    total_text_height = sum(line_heights) + line_spacing * (len(lines) - 1)
+
+    # Start Y (centered)
+    y = (height - total_text_height) // 2 - (10 if sub_text else 0)
+
+    # Draw each line centered
+    for i, line in enumerate(lines):
+        bbox = draw.textbbox((0, 0), line, font=font_large)
+        w = bbox[2] - bbox[0]
+
+        x = (width - w) // 2
+        draw.text((x, y), line, fill=text_color, font=font_large)
+
+        y += line_heights[i] + line_spacing
+
+    # ---- Subtext ----
+    if sub_text:
+        sub_lines = wrap_text(draw, sub_text, font_small, max_text_width)
+
+        y += 10  # gap
+
+        for line in sub_lines:
+            bbox = draw.textbbox((0, 0), line, font=font_small)
+            w = bbox[2] - bbox[0]
+            h = bbox[3] - bbox[1]
+
+            x = (width - w) // 2
+            draw.text((x, y), line, fill=text_color, font=font_small)
+            y += h + 4
+
+    # ---- Convert to RGB565 ----
+    pixel_data = []
+    for py in range(height):
+        for px in range(width):
+            r, g, b = img.getpixel((px, py))
+            rgb565 = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3)
+            pixel_data.extend([(rgb565 >> 8) & 0xFF, rgb565 & 0xFF])
+
+    return pixel_data
+
 def load_image_rgb565(filepath, screen_width=240, screen_height=280):
     """Load image file as RGB565 pixel data (scale maintaining aspect ratio + center crop)"""
     try:
@@ -390,7 +496,7 @@ class ChatBot:
             text_color = (0, 255, 255)
         w, h = self.board.LCD_WIDTH, self.board.LCD_HEIGHT
         # generate pixel data from text
-        pixel_data = make_text_image(text, sub_text, text_color=text_color, width=w, height=h)
+        pixel_data = make_multiline_text_image(text, sub_text, text_color=text_color, width=w, height=h)
         try:
             # show on screen
             self.board.draw_image(0, 0, w, h, pixel_data)
