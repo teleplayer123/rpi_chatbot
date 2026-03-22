@@ -103,14 +103,7 @@ def wrap_text(draw, text, font, max_width):
 
     return lines
 
-def make_multiline_text_image(
-    text,
-    sub_text="",
-    bg_color=(0, 0, 0),
-    text_color=(255, 255, 255),
-    width=240,
-    height=280,
-):
+def make_multiline_text_image(text, sub_text="", bg_color=(0, 0, 0), text_color=(255, 255, 255), width=240, height=280):
     img = Image.new("RGB", (width, height), bg_color)
     draw = ImageDraw.Draw(img)
 
