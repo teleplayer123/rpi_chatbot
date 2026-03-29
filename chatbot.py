@@ -509,19 +509,14 @@ class ChatBot:
                     with self._lock:
                         self.state = State.PLAYING
                     # TRANSCRIBE (Whisper.cpp)
-                    self.update_screen("Thinking...", color="blue")
+                    self.update_screen("Processing...", color="blue")
                     user_text = subprocess.check_output(" ".join([WHISPER_CLI, "-m", WHISPER_MODEL, "-nt", "-f", RECORD_FILE]), text=True, shell=True)
                     
                     # Display user prompt
                     self.update_screen("User: ", sub_text=user_text, color="yellow")
                     time.sleep(2) # Show trascribed text for a moment
 
-                    # GENERATE (PicoLM)
-                    # We run this and capture output to display it
-                    print("Running picolm ...")
-                    ai_response = subprocess.check_output(" ".join([PICOLM_CLI, PICOLM_MODEL, "-p", f"\"{user_text.strip()}\""]), text=True, shell=True)
-                    self.update_screen("AI: ", sub_text=ai_response, color="cyan")
-                    time.sleep(5) # Show AI response
+                    # TODO: execute cli command based on user_text
                     
                     # Speak the text using Piper
                     # print("Running piper...")
