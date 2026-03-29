@@ -7,6 +7,7 @@ import threading
 import RPi.GPIO as GPIO
 from PIL import Image, ImageDraw, ImageFont
 from WhisPlay import WhisPlayBoard
+from command_parser import analyze_text, execute_command
 
 WHISPER_CLI = "whisper-cli"
 PICOLM_CLI = "picolm"
@@ -516,7 +517,29 @@ class ChatBot:
                     self.update_screen("User: ", sub_text=user_text, color="yellow")
                     time.sleep(2) # Show trascribed text for a moment
 
-                    # TODO: execute cli command based on user_text
+                    # Parse user text and execute command
+                    command, response_prefix, is_executable = analyze_text(user_text.strip())
+
+                    if is_executable and command:
+                        self.update_screen("Executing...", sub_text=command[:30], color="blue")
+                        return_code, stdout, stderr = execute_command(command)
+
+                        # Prepare AI response
+                        if return_code == 0:
+                            ai_response = f"{response_prefix} {stdout.strip()}" if response_prefix else stdout.strip()
+                        else:
+                            ai_response = f"Error: {stderr.strip()}"
+
+                        # Speak the response using Piper
+                        piper_cmd = f"echo '{ai_response}' | {PIPER_CLI} --model {PIPER_MODEL} --config {PIPER_CONFIG} --output_raw | aplay -r 22050 -f S16_LE -t raw"
+                        subprocess.Popen(piper_cmd, shell=True)
+
+                        # Show response on screen
+                        self.update_screen("Response:", sub_text=ai_response[:30], color="yellow")
+                    else:
+                        # No matching command found
+                        self.update_screen("No command", sub_text="for that request", color="red")
+                        time.sleep(1)
                     
                     # Speak the text using Piper
                     # print("Running piper...")
