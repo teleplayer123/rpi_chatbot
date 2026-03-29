@@ -168,6 +168,7 @@ class CommandParser:
         text = re.sub(r'\b(what|the|a|an)\b', '', text)
         text = text.strip()
 
+        # TODO: add check for verifying request is in available services (e.g. systemctl list-units --type=service --all)
         # Pattern to extract dynamic parameters (e.g., "restart nginx")
         param_match = re.search(r'(stop|start|restart|kill)\s+(\w+)', text)
         if param_match:
