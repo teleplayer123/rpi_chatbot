@@ -523,6 +523,9 @@ class ChatBot:
 
                         # Parse user text and execute command
                         command, response_prefix, is_executable = analyze_text(ai_text.strip())
+                        if not is_executable:
+                            # If Picolm doesn't return an executable command, fallback to analyzing original user text
+                            command, response_prefix, is_executable = analyze_text(user_text.strip())
                     except Exception:
                         # Fallback to simple keyword-based command parsing if Picolm fails
                         command, response_prefix, is_executable = analyze_text(user_text.strip())
