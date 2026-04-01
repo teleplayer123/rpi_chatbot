@@ -530,10 +530,6 @@ class ChatBot:
                         else:
                             ai_response = f"Error: {stderr.strip()}"
 
-                        # Speak the response using Piper
-                        piper_cmd = f"echo '{ai_response}' | {PIPER_CLI} --model {PIPER_MODEL} --config {PIPER_CONFIG} --output_raw | aplay -r 22050 -f S16_LE -t raw"
-                        subprocess.Popen(piper_cmd, shell=True)
-
                         # Show response on screen
                         self.update_screen("Response:", sub_text=ai_response[:30], color="yellow")
                     else:
