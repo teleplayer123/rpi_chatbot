@@ -532,6 +532,9 @@ class ChatBot:
                         # Fallback to simple keyword-based command parsing if Picolm fails
                         command, response_prefix, is_executable = analyze_text(user_text.strip())
 
+                    # If Picolm is commenteds out, uncomment this line
+                    #command, response_prefix, is_executable = analyze_text(user_text.strip())
+
                     if is_executable and command:
                         self.update_screen("Executing...", sub_text=command[:30], color="blue")
                         return_code, stdout, stderr = execute_command(command)
