@@ -527,7 +527,8 @@ class ChatBot:
                         if not is_executable:
                             # If Picolm doesn't return an executable command, fallback to analyzing original user text
                             command, response_prefix, is_executable = analyze_text(user_text.strip())
-                    except Exception:
+                    except Exception as err:
+                        print(f"Picolm error: {err}")
                         # Fallback to simple keyword-based command parsing if Picolm fails
                         command, response_prefix, is_executable = analyze_text(user_text.strip())
 
