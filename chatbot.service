@@ -1,0 +1,11 @@
+[Unit]
+Description=Starts chatbot service
+
+[Service]
+Type=simple
+WorkingDirectory=/home/pi/chatbot
+ExecStart=/usr/bin/python3 /home/pi/chatbot/chatbot.py
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
