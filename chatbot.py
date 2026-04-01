@@ -520,7 +520,8 @@ class ChatBot:
                     try:
                     # PICOLM for command parsing
                         ai_text = subprocess.check_output(" ".join([PICOLM_CLI, "-m", PICOLM_MODEL, "-p", f"\"{user_text}\""]), text=True, shell=True)
-
+                        self.update_screen("AI: ", sub_text=f"{ai_text}", color="blue")
+                        time.sleep(5) # Pause to show ai response for debug
                         # Parse user text and execute command
                         command, response_prefix, is_executable = analyze_text(ai_text.strip())
                         if not is_executable:
