@@ -518,7 +518,7 @@ class ChatBot:
                     time.sleep(2) # Show trascribed text for a moment
 
                     try:
-                    # PICOLM for command parsing
+                        # PICOLM for command parsing
                         ai_text = subprocess.check_output(" ".join([PICOLM_CLI, PICOLM_MODEL, "-p", f"\"{user_text}\""]), text=True, shell=True)
                         self.update_screen("AI: ", sub_text=f"{ai_text}", color="blue")
                         time.sleep(5) # Pause to show ai response for debug
