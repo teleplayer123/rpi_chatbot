@@ -517,8 +517,15 @@ class ChatBot:
                     self.update_screen("User: ", sub_text=user_text, color="yellow")
                     time.sleep(2) # Show trascribed text for a moment
 
-                    # Parse user text and execute command
-                    command, response_prefix, is_executable = analyze_text(user_text.strip())
+                    try:
+                    # PICOLM for command parsing
+                        ai_text = subprocess.check_output(" ".join([PICOLM_CLI, "-m", PICOLM_MODEL, "-p", f"\"{user_text}\""]), text=True, shell=True)
+
+                        # Parse user text and execute command
+                        command, response_prefix, is_executable = analyze_text(ai_text.strip())
+                    except Exception:
+                        # Fallback to simple keyword-based command parsing if Picolm fails
+                        command, response_prefix, is_executable = analyze_text(user_text.strip())
 
                     if is_executable and command:
                         self.update_screen("Executing...", sub_text=command[:30], color="blue")
