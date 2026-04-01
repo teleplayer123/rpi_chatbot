@@ -14,7 +14,7 @@ PICOLM_CLI = "picolm"
 PIPER_CLI = "piper/piper"
 
 WHISPER_MODEL = os.path.join(os.getcwd(), "models", "ggml-tiny.en.bin")
-PICOLM_MODEL = os.path.join(os.getcwd(), "models", "smollm2-model-q4_0.gguf")
+PICOLM_MODEL = os.path.join(os.getcwd(), "models", "nl2bash_model_Q4_K_M.gguf")
 PIPER_CONFIG = os.path.join(os.getcwd(), "piper", "config.json")
 PIPER_MODEL = os.path.join(os.getcwd(), "piper", "model.onnx")
 
