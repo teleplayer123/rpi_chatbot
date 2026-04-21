@@ -178,6 +178,108 @@ def make_multiline_text_image(text, sub_text="", bg_color=(0, 0, 0), text_color=
 
     return pixel_data
 
+def make_multiline_text_image_refactor(text, sub_text="", bg_color=(0, 0, 0), text_color=(255, 255, 255), width=240, height=280):
+    img = Image.new("RGB", (width, height), bg_color)
+    draw = ImageDraw.Draw(img)
+
+    # Load fonts
+    font_large = None
+    font_small = None
+    for fpath in [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf",
+    ]:
+        if os.path.exists(fpath):
+            try:
+                font_large = ImageFont.truetype(fpath, 28)
+                font_small = ImageFont.truetype(fpath, 18)
+            except Exception:
+                pass
+            break
+
+    if font_large is None:
+        font_large = ImageFont.load_default()
+        font_small = ImageFont.load_default()
+
+    # Calculate dynamic font size for sub_text (min 6px)
+    min_font_size = 6
+    sub_font_size = font_small.size if hasattr(font_small, 'size') else 18
+    
+    # Adjust font size to fit sub_text while respecting minimum
+    if sub_text:
+        # Try smaller fonts until everything fits
+        for size in range(min_font_size, min(sub_font_size, 28)):
+            test_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", size)
+            sub_lines = wrap_text(draw, sub_text, test_font, width - 20)
+            
+            # Calculate total height needed for subtext
+            sub_line_heights = []
+            for line in sub_lines:
+                bbox = draw.textbbox((0, 0), line, font=test_font)
+                sub_line_heights.append(bbox[3] - bbox[1])
+            
+            sub_text_height = sum(sub_line_heights) + 4 * (len(sub_lines) - 1)
+            
+            # Check if subtext fits below header (header takes ~140px, leave 100px for subtext)
+            if sub_text_height <= 100:
+                font_small = test_font
+                break
+        else:
+            font_small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", min_font_size)
+
+    padding = 10
+    max_text_width = width - padding * 2
+
+    # Header at top (not centered vertically anymore)
+    header_y = padding
+    
+    # Wrap and draw header
+    header_lines = wrap_text(draw, text, font_large, max_text_width)
+    
+    header_line_heights = []
+    for line in header_lines:
+        bbox = draw.textbbox((0, 0), line, font=font_large)
+        header_line_heights.append(bbox[3] - bbox[1])
+    
+    header_spacing = 6
+    total_header_height = sum(header_line_heights) + header_spacing * (len(header_lines) - 1)
+    
+    # Draw each header line at top
+    for i, line in enumerate(header_lines):
+        bbox = draw.textbbox((0, 0), line, font=font_large)
+        w = bbox[2] - bbox[0]
+        
+        x = (width - w) // 2
+        draw.text((x, header_y), line, fill=text_color, font=font_large)
+        
+        header_y += header_line_heights[i] + header_spacing
+
+    # Subtext at bottom with calculated font size
+    if sub_text:
+        sub_lines = wrap_text(draw, sub_text, font_small, max_text_width)
+        
+        # Start subtext after header
+        y = header_y + total_header_height + 10  # gap after header
+        
+        for line in sub_lines:
+            bbox = draw.textbbox((0, 0), line, font=font_small)
+            w = bbox[2] - bbox[0]
+            h = bbox[3] - bbox[1]
+            
+            x = (width - w) // 2
+            draw.text((x, y), line, fill=text_color, font=font_small)
+            y += h + 4
+
+    # ---- Convert to RGB565 ----
+    pixel_data = []
+    for py in range(height):
+        for px in range(width):
+            r, g, b = img.getpixel((px, py))
+            rgb565 = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3)
+            pixel_data.extend([(rgb565 >> 8) & 0xFF, rgb565 & 0xFF])
+
+    return pixel_data
+
 def load_image_rgb565(filepath, screen_width=240, screen_height=280):
     """Load image file as RGB565 pixel data (scale maintaining aspect ratio + center crop)"""
     try:
