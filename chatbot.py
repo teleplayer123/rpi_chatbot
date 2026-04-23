@@ -1,7 +1,6 @@
 import os
 import time
 import subprocess
-import sys
 import signal
 import threading
 import RPi.GPIO as GPIO
@@ -140,10 +139,10 @@ def make_multiline_text_image(text, sub_text="", bg_color=(0, 0, 0), text_color=
     line_spacing = 6
     total_text_height = sum(line_heights) + line_spacing * (len(lines) - 1)
 
-    # Start Y (centered)
-    y = (height - total_text_height) // 2 - (10 if sub_text else 0)
+    # Start Y at top (not centered)
+    y = padding
 
-    # Draw each line centered
+    # Draw each line centered at top
     for i, line in enumerate(lines):
         bbox = draw.textbbox((0, 0), line, font=font_large)
         w = bbox[2] - bbox[0]
@@ -157,7 +156,7 @@ def make_multiline_text_image(text, sub_text="", bg_color=(0, 0, 0), text_color=
     if sub_text:
         sub_lines = wrap_text(draw, sub_text, font_small, max_text_width)
 
-        y += 10  # gap
+        y += 10  # gap after main text
 
         for line in sub_lines:
             bbox = draw.textbbox((0, 0), line, font=font_small)
@@ -636,7 +635,7 @@ class ChatBot:
                     command, response_prefix, is_executable = analyze_text(user_text.strip())
 
                     if is_executable and command:
-                        self.update_screen("Executing...", sub_text=command[:30], color="blue")
+                        self.update_screen("Executing...", sub_text=command, color="blue")
                         return_code, stdout, stderr = execute_command(command)
 
                         # Prepare AI response
@@ -646,7 +645,7 @@ class ChatBot:
                             ai_response = f"Error: {stderr.strip()}"
 
                         # Show response on screen
-                        self.update_screen("Response:", sub_text=ai_response[:30], color="yellow")
+                        self.update_screen("Response:", sub_text=ai_response, color="yellow")
                     else:
                         # No matching command found
                         self.update_screen("No command", sub_text="for that request", color="red")

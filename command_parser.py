@@ -23,6 +23,11 @@ class CommandParser:
                     "description": "Get current date and time"
                 },
                 {
+                    "keywords": [ "station dump", "station", "dump", "wireless"],
+                    "command": "iw $(ip link show | grep -E 'wl' | awk '{print $2}' | sed 's/:$//') station dump",
+                    "description": "Show wireless interface station dump"
+                },
+                {
                     "keywords": ["uptime", "how", "long", "been", "running"],
                     "command": "uptime",
                     "description": "Get system uptime"
@@ -98,6 +103,16 @@ class CommandParser:
                     "command": "ip link show",
                     "description": "Show network interfaces"
                 },
+                {
+                    "keywords": [ "station", "dump", "station dump", "wireless"],
+                    "command": "iw $(ip link show | grep -E 'wl' | awk '{print $2}' | sed 's/:$//') station dump",
+                    "description": "Show wireless interface station dump"
+                },
+                {
+                    "keywords": ["show wireless interface name", "interface", "name"],
+                    "command": "ip link show | grep -E 'wl' | awk '{print $2}' | sed 's/:$//'",
+                    "description": "Shows wireless interface name"
+                }
             ],
             "gpio_control": [
                 {
@@ -165,7 +180,7 @@ class CommandParser:
         text = text.lower().strip()
 
         # Remove common filler words and questions
-        text = re.sub(r'\b(what|the|a|an)\b', '', text)
+        text = re.sub(r'\b(what|the|a|an|is|it|and)\b', '', text)
         text = text.strip()
 
         # TODO: add check for verifying request is in available services (e.g. systemctl list-units --type=service --all)
@@ -206,13 +221,16 @@ class CommandParser:
             Tuple of (return_code, stdout, stderr)
         """
         try:
+            print(f"Command: {command}")
             result = subprocess.run(
                 command,
                 shell=True,
                 capture_output=True,
                 text=True,
-                timeout=30
+                timeout=10
             )
+            print(f"Result: {result.stdout}")
+            print(f"Error: {result.stderr}")
             return result.returncode, result.stdout, result.stderr
         except subprocess.TimeoutExpired:
             return -1, "", "Command timed out"
