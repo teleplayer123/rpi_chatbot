@@ -2,3 +2,4 @@ runcl.sh
 .DS_Store
 ggml-*.bin
 opencode.json
+__pycache__
