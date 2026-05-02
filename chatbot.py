@@ -632,7 +632,7 @@ class ChatBot:
                     #     command, response_prefix, is_executable = analyze_text(user_text.strip())
 
                     # If Picolm is commenteds out, uncomment this line
-                    command, response_prefix, is_executable = analyze_text(user_text.strip())
+                    command, response_prefix, is_executable, confidence = analyze_text(user_text.strip())
 
                     if is_executable and command:
                         self.update_screen("Executing...", sub_text=command, color="blue")
